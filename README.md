@@ -2,7 +2,9 @@
 
 # CagePass
 
-**海外的 Claude 负责想，国内的 AI 帮你跑腿 —— 数据不用出国，电脑不用开门**
+**上一世，我用 Claude Code 被封了；这一世，我要带着我的 Codex / Antigravity，把 Claude 大小姐娶回来。**
+
+*海外的 Claude 负责想，国内的 AI 帮你跑腿 —— 数据不用出国，电脑不用开门*
 
 <p>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
