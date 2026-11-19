@@ -2,7 +2,7 @@
 
 # CagePass
 
-**上一世，我用 Claude Code 被封了；这一世，我要带着我的 Codex / Antigravity，把 Claude 大小姐娶回来。**
+**上一世，我用 Claude Code 被封了；这一世，我要带着我的 Codex / Antigravity / Cursor / Trae / Qoder / 通义灵码 / DeepSeek / Kimi / GLM，把 Claude 大小姐娶回来。**
 
 *海外的 Claude 负责想，国内的 AI 帮你跑腿 —— 数据不用出国，电脑不用开门*
 
@@ -32,7 +32,7 @@
 所以我们做了 **CagePass**，思路很简单——**让两个 AI 分工配合**：
 
 * **海外的 Claude Code**：继续老老实实待在海外隔离环境里，专注想方案、写代码、看结果。
-* **国内你本机的 AI 助手**（Antigravity / Cursor / Codex 等）：帮你管好本机一个**彻底断网的 Docker 容器**，平时你要传文件、开新项目、收工停机，直接跟本机 AI 说一声就行。
+* **国内你本机的 AI 助手**（Codex / Antigravity / Cursor / Trae / Qoder / 通义灵码 / DeepSeek / Kimi / GLM 等任意本机 Agent）：帮你管好本机一个**彻底断网的 Docker 容器**，平时你要传文件、开新项目、收工停机，直接跟本机 AI 说一声就行。
 
 海外 Claude 需要算本地数据时，不用把数据拷出国，只通过一条 `./local-exec` 把命令递回来，在你本机断网容器里就地跑完，再把算好的报告传回去。**不开门，只递信。**
 
