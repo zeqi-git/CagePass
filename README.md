@@ -77,36 +77,40 @@
 
 ```mermaid
 flowchart TB
-    subgraph Local["你本机的电脑 (国内 macOS / Linux)"]
-        User["你（提需求 · 交文件）"] --> LocalAI["本机 AI 助手 + bin/cagepass\n安全校验 · .git 只读保护 · 多项目管理"]
+    classDef userStyle fill:#FFF7ED,stroke:#EA580C,stroke-width:2px,color:#7C2D12,rx:10,ry:10
+    classDef agentStyle fill:#EFF6FF,stroke:#2563EB,stroke-width:2px,color:#1E3A8A,rx:10,ry:10
+    classDef vaultStyle fill:#0F172A,stroke:#38BDF8,stroke-width:2px,color:#F8FAFC,rx:10,ry:10
+    classDef bridgeStyle fill:#ECFDF5,stroke:#059669,stroke-width:2px,color:#064E3B,rx:10,ry:10
+    classDef remoteStyle fill:#FEF2F2,stroke:#E11D48,stroke-width:2px,color:#881337,rx:10,ry:10
 
-        subgraph Vault["本机托管目录 vault/ (电脑上其他文件完全不可见)"]
-            Data["vault/&lt;项目&gt;/data/\n原始数据 (:ro 只读，绝不传去海外)"]
-            Work["vault/&lt;项目&gt;/work/\n代码与报告 (:rw 读写)"]
-        end
+    subgraph Local["💻 国内本机电脑 (macOS / Linux)"]
+        direction TB
+        U["🧑 你\n提需求 · 给文件"]:::userStyle
+        AI["🤖 本机 AI 助手 + cagepass CLI\n路径安全校验 · .git 只读保护 · 多项目分槽"]:::agentStyle
 
-        LocalAI -->|"cagepass put 投递"| Data
-        LocalAI -->|"cagepass put 投递"| Work
+        D["🔒 vault/项目/data/ (:ro)\n数据不出海 · 100% 留在本机"]:::vaultStyle
+        W["📝 vault/项目/work/ (:rw)\n代码与报告 · 双向实时同步"]:::bridgeStyle
+        C["📦 local-cage 断网容器\n彻底无外网 · pandas / duckdb / pyarrow"]:::vaultStyle
 
-        subgraph Docker["本地 Docker — cage_net (彻底断外网)"]
-            Cage["local-cage 断网容器 (非 root)\n预装 Python 3.11 + pandas / duckdb / pyarrow\n无公网路由 · 无 docker.sock"]
-        end
-
-        Data -->|":ro 挂载"| Cage
-        Work -->|":rw 挂载 + .git(:ro)"| Cage
-
-        Daemon["本机同步与接信服务 (Mutagen + 文件 RPC)\n• work/ 双向实时同步\n• 收到海外信件就在 local-cage 里跑完回传"]
-        Work <--> Daemon
-        Cage <-->|"docker exec"| Daemon
+        U --> AI
+        AI -->|"put --ro"| D
+        AI -->|"put --rw"| W
+        D -->|":ro 只读挂载"| C
+        W -->|":rw 挂载"| C
     end
 
-    subgraph Remote["海外机器 / 隔离容器 (免 sudo · 免装软件)"]
-        Dir["~/cagepass_projects/&lt;项目&gt;/\n├── local/        (与本机 work/ 实时同步)\n├── vpc/          (海外自己的文件)\n├── local-exec    (把命令递回本机容器跑)\n└── CLAUDE.md     (写给海外 Claude 的使用说明)"]
-        CC["海外 Claude Code\n• 改代码看报告：直接读写 ./local/\n• 算本机大数据：运行 ./local-exec 'python3 ...'"]
-        CC <--> Dir
+    subgraph Overseas["🌴 海外机器 / 隔离容器 (免 sudo · 免装软件)"]
+        direction TB
+        R["📂 ~/cagepass_projects/项目/\nlocal/ (同步区) · local-exec · CLAUDE.md"]:::bridgeStyle
+        CC["🧠 海外 Claude Code\n写代码 · 看报告 · 发指令"]:::remoteStyle
+        CC <-->|"原生读写 ./local/"| R
     end
 
-    Daemon <==>|"SSH (自动屏蔽本机语言环境透传)"| Dir
+    W <==>|"⚡ Mutagen 双向实时同步 (数据出海)"| R
+    R -.->|"✉️ ./local-exec 文件 RPC (数据不出海，回本机算)"| C
+
+    style Local fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1.5px,rx:12,ry:12
+    style Overseas fill:#FFFBEB,stroke:#FCD34D,stroke-width:1.5px,rx:12,ry:12
 ```
 
 ---
