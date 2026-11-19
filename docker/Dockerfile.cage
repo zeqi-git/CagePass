@@ -1,0 +1,49 @@
+FROM python:3.11-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        openssh-server \
+        socat \
+        git \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir \
+        pandas \
+        duckdb \
+        pyarrow
+
+# Create non-root user `dev` and user-owned sshd runtime/host-key directories
+RUN useradd -m -u 1000 -s /bin/bash dev \
+    && mkdir -p /home/dev/.ssh /home/dev/.sshd /workspace \
+    && chown -R dev:dev /home/dev /workspace \
+    && chmod 700 /home/dev/.ssh /home/dev/.sshd \
+    && su -s /bin/bash dev -c "ssh-keygen -t ed25519 -f /home/dev/.sshd/ssh_host_ed25519_key -N ''"
+
+# Hardened non-root sshd config (runs directly as `dev` on port 2222, zero elevated caps)
+RUN cat <<'EOF' > /home/dev/.sshd/sshd_config
+Port 2222
+ListenAddress 127.0.0.1
+HostKey /home/dev/.sshd/ssh_host_ed25519_key
+PidFile /home/dev/.sshd/sshd.pid
+AuthorizedKeysFile /home/dev/.ssh/authorized_keys
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+ChallengeResponseAuthentication no
+PubkeyAuthentication yes
+PermitRootLogin no
+AllowUsers dev
+UsePAM no
+StrictModes no
+PrintMotd no
+Subsystem sftp /usr/lib/openssh/sftp-server
+EOF
+RUN chown dev:dev /home/dev/.sshd/sshd_config && chmod 600 /home/dev/.sshd/sshd_config
+
+USER dev
+WORKDIR /workspace
+
+CMD ["/usr/sbin/sshd", "-D", "-e", "-f", "/home/dev/.sshd/sshd_config"]

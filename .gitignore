@@ -1,0 +1,9 @@
+.state/
+vault/
+zq-vpc.yaml
+cagepass.yaml
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+*.egg-info/

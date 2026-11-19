@@ -1,0 +1,27 @@
+# CagePass example configuration
+# Copy to zq-vpc.yaml (or run `./bin/cagepass init`) and fill in your remote SSH host alias.
+
+remote:
+  # An SSH host alias defined in your local ~/.ssh/config
+  ssh_host: my-remote-host
+  # Base directory on the remote host where projects live
+  base_dir: ~/cagepass_projects
+  # Optional: route SSH through a local SOCKS5 proxy + jump host
+  socks5_proxy: ""
+  jump_host: ""
+  target_addr: ""
+
+cage:
+  container_name: local-cage
+  image: zq-vpc-cage:latest
+  ssh_port: 2222
+  local_bridge_port: 22220
+
+projects:
+  demo:
+    remote_dir: ~/cagepass_projects/demo/local
+    extra_ro: []
+    extra_rw: []
+    ignore: []
+    enabled: true
+    isolated: false
