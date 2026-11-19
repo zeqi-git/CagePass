@@ -2,159 +2,166 @@
 
 # CagePass
 
-**海外 Claude Code 专注思考与写代码 × 国内本机 AI 助手守住断网金库与数据调度**
-
-*Dual-AI Collaboration: Keep Claude Code safely in its overseas environment while your local AI assistant manages an offline Docker vault, stages private data, and executes local jobs through `./local-exec`.*
+**海外的 Claude 负责想，国内的 AI 帮你跑腿 —— 数据不用出国，电脑不用开门**
 
 <p>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
   <img src="https://img.shields.io/badge/Python-3.9%2B-3776AB.svg" alt="Python 3.9+" />
   <img src="https://img.shields.io/badge/Docker-Offline%20Vault-2496ED.svg" alt="Docker Offline Vault" />
-  <img src="https://img.shields.io/badge/Remote-Zero%20Sudo%20%26%20Zero%20Install-2ea44f.svg" alt="Zero Sudo Remote" />
+  <img src="https://img.shields.io/badge/Remote-Zero%20Sudo-2ea44f.svg" alt="Zero Sudo Remote" />
 </p>
 
-<img src="assets/cagepass-poster.jpg" alt="CagePass 宣传海报" width="100%" />
+<img src="assets/cagepass-poster.jpg" alt="CagePass" width="100%" />
 
-**[本机 AI 一键接入指南](AGENT-GUIDE.md) · [配置模板](cagepass.example.yaml) · [安全护栏](#四层安全护栏) · [日常使用手册](#日常使用手册)**
+**[交给本机 AI 一键接入](AGENT-GUIDE.md) · [配置示例](cagepass.example.yaml) · [安全保护](#怎么保证你电脑的安全) · [日常怎么用](#日常怎么用)**
 
 </div>
 
 ---
 
-## 核心理念：双 AI 分工，数据不出本地
+## 为什么要做 CagePass
 
-很多团队在使用 Claude Code 时都面临同一个矛盾：**Claude Code 部署在海外机器（通常是无 `sudo`、容器隔离的托管环境），而真实业务数据、敏感文件或 GB 级数据集留在国内本机电脑上。**
+如果你把 Claude Code 放在海外机器上跑，大概率遇见过这种别扭事：
 
-**CagePass** 提出一种 **“海外 CC + 国内本机 AI” 双 Agent 协同模式**：
+**干活的 Claude 在海外，但真正要分析的文件和几个 G 的数据，全躺在国内自己电脑里。**
 
-* **海外 Claude Code（云端大脑）**：稳稳留在海外合规隔离环境里，专注架构设计、写代码、做分析与生成报告，不碰你的本机宿主机，也不需要把原始数据拷到海外硬盘。
-* **国内本机 AI 助手（本机管家）**：由你电脑上的本地 AI（如 Antigravity / Cursor / Codex 等）担任，接管 `CagePass` 的全部本地运维——帮你启停断网 Docker、做安全路径审计、把文件投递进只读金库或读写同步区，并排查连接状态。
-* **你（决策者）**：只需把数据交给你本机的 AI 助手，然后去海外 Claude Code 下达分析/开发指令，**不开门、只递信**。
+把原始数据传去海外？传得慢、占硬盘、心里还不踏实；把本机直接打通给海外？万一 AI 误操作，自己电脑里的其他文件和密钥都在裸奔；每次新开项目还要自己折腾同步和容器，更是麻烦。
 
-| 传统痛点 | CagePass 的解法 |
-| :--- | :--- |
-| **原始/敏感/GB 级数据不能传出国** | 锁进本机 `vault/<项目>/data/`，以只读（`:ro`）挂入**彻底断外网**的本地 Docker 容器，**100% 留在本机** |
-| **海外 CC 跑在沙箱容器里，连不到外部端口** | 采用基于同步目录的 **`./local-exec` 文件 RPC**——零海外私钥、零常驻反向隧道，天然穿透任意远程容器沙箱 |
-| **本地运维繁琐、多项目容易串台** | 配套 [AGENT-GUIDE.md](AGENT-GUIDE.md)，把本机配置、投递与多项目分槽全部交给你的国内本机 AI 助手代劳 |
+所以我们做了 **CagePass**，思路很简单——**让两个 AI 分工配合**：
+
+* **海外的 Claude Code**：继续老老实实待在海外隔离环境里，专注想方案、写代码、看结果。
+* **国内你本机的 AI 助手**（Antigravity / Cursor / Codex 等）：帮你管好本机一个**彻底断网的 Docker 容器**，平时你要传文件、开新项目、收工停机，直接跟本机 AI 说一声就行。
+
+海外 Claude 需要算本地数据时，不用把数据拷出国，只通过一条 `./local-exec` 把命令递回来，在你本机断网容器里就地跑完，再把算好的报告传回去。**不开门，只递信。**
 
 ---
 
-## 1 句话启动：让你的本机 AI 助手帮你接管
+## 你可以用它做什么
 
-克隆本仓库后，**无需手动啃配置**，直接把下面这句话发给你的国内本机 AI 助手：
+* **数据留在自己电脑，照样让海外 Claude 干活。** 把敏感文件或几个 G 的原始数据放进本机只读区，海外硬盘不留副本；海外 Claude 写好脚本后，用 `./local-exec` 就能调你本机断网容器就地算完，只把汇总结果拿回去。
+* **代码和报告两边秒级同步。** 需要一起改的脚本和产出放在工作区，1~2 秒双向同步，海外改完你电脑上立刻能看到，完全不卡。
+* **把运维全甩给本机 AI。** 不用背命令、不用自己写 Docker 配置。把仓库里的 [AGENT-GUIDE.md](AGENT-GUIDE.md) 交给本机 AI，它会一步步帮你装好环境、配好项目；以后要传文件直接丢给它就行。
+* **放心放权，不怕越界。** 本机容器只能看到你明确放进去的那几个文件夹，电脑上其他文件谁也看不到；容器彻底断外网，脚本绝对无法偷偷往外发数据；`.git` 目录自动只读保护。
+* **海外机器零折腾。** 不用 `sudo`，不用在海外装任何软件，哪怕海外 Claude 自己也是关在隔离容器里跑的，一样直接能用。
+
+---
+
+## 最省事的用法：直接交给你的本机 AI
+
+克隆完仓库，不用自己看文档，直接把下面这句话发给你电脑上的 AI 助手：
 
 ```text
-请先阅读本仓库根目录的 AGENT-GUIDE.md，作为我的 CagePass 本机运维 Agent，一步步帮我检查环境、完成配置，并接入我的第一个项目。
+请先阅读本仓库根目录的 AGENT-GUIDE.md，作为我的 CagePass 本机运维助手，一步步帮我检查环境、完成配置，并接入我的第一个项目。
 ```
 
-本机 AI 会自动完成环境探测、配置生成、断网隔离验收与端到端自检，并从此刻起担任你的日常本机管家。
+它会自动帮你检查本机环境、配好容器和同步、跑完隔离自检，以后日常传文件和开新项目直接找它就行。
 
 ---
 
-## 整体架构
+## 工作流程一览
 
 ```mermaid
 flowchart TB
-    subgraph Local["国内本机电脑 (macOS / Linux)"]
-        User["你（提需求 · 交文件）"] --> LocalAI["国内本机 AI 助手 + bin/cagepass CLI\n路径安全校验 · .git 只读覆盖 · 多项目分槽"]
+    subgraph Local["你本机的电脑 (国内 macOS / Linux)"]
+        User["你（提需求 · 交文件）"] --> LocalAI["本机 AI 助手 + bin/cagepass\n安全校验 · .git 只读保护 · 多项目管理"]
 
-        subgraph Vault["受控托管金库 vault/ (宿主机其余文件物理不可见)"]
-            Data["vault/&lt;proj&gt;/data/\n只读原始数据 (:ro，绝不同步海外)"]
-            Work["vault/&lt;proj&gt;/work/\n读写代码与报告 (:rw)"]
+        subgraph Vault["本机托管目录 vault/ (电脑上其他文件完全不可见)"]
+            Data["vault/&lt;项目&gt;/data/\n原始数据 (:ro 只读，绝不传去海外)"]
+            Work["vault/&lt;项目&gt;/work/\n代码与报告 (:rw 读写)"]
         end
 
-        LocalAI -->|"cagepass put 安全投递"| Data
-        LocalAI -->|"cagepass put 安全投递"| Work
+        LocalAI -->|"cagepass put 投递"| Data
+        LocalAI -->|"cagepass put 投递"| Work
 
-        subgraph Docker["本地 Docker — cage_net (internal: true，彻底断外网)"]
-            Cage["local-cage 断网容器 (非 root dev)\npython:3.11-slim + pandas / duckdb / pyarrow\ncap_drop: ALL · 无 docker.sock · 无公网路由"]
+        subgraph Docker["本地 Docker — cage_net (彻底断外网)"]
+            Cage["local-cage 断网容器 (非 root)\n预装 Python 3.11 + pandas / duckdb / pyarrow\n无公网路由 · 无 docker.sock"]
         end
 
         Data -->|":ro 挂载"| Cage
         Work -->|":rw 挂载 + .git(:ro)"| Cage
 
-        Daemon["本机桥接守护进程 + Mutagen\n• 实时双向同步 work/\n• 监听 .cagepass_rpc 队列并触发 local-cage 就地计算"]
+        Daemon["本机同步与接信服务 (Mutagen + 文件 RPC)\n• work/ 双向实时同步\n• 收到海外信件就在 local-cage 里跑完回传"]
         Work <--> Daemon
         Cage <-->|"docker exec"| Daemon
     end
 
-    subgraph Remote["海外机器 / 隔离容器 (零 sudo · 零系统安装 · 零私钥)"]
-        Dir["~/cagepass_projects/&lt;proj&gt;/\n├── local/        (与本机 work/ 秒级双向同步)\n├── vpc/          (海外原生文件)\n├── local-exec    (一键触发本机断网容器计算)\n└── CLAUDE.md     (自动生成的海外 CC 协作指引)"]
-        CC["海外 Claude Code\n• 写代码与报告：直接读写 ./local/\n• 算本地大数据：运行 ./local-exec 'python3 ...'"]
+    subgraph Remote["海外机器 / 隔离容器 (免 sudo · 免装软件)"]
+        Dir["~/cagepass_projects/&lt;项目&gt;/\n├── local/        (与本机 work/ 实时同步)\n├── vpc/          (海外自己的文件)\n├── local-exec    (把命令递回本机容器跑)\n└── CLAUDE.md     (写给海外 Claude 的使用说明)"]
+        CC["海外 Claude Code\n• 改代码看报告：直接读写 ./local/\n• 算本机大数据：运行 ./local-exec 'python3 ...'"]
         CC <--> Dir
     end
 
-    Daemon <==>|"SSH (强制禁 SendEnv，防本机 Locale 透传)"| Dir
+    Daemon <==>|"SSH (自动屏蔽本机语言环境透传)"| Dir
 ```
 
 ---
 
-## 手动快速开始
+## 如果你想自己手动跑
 
-### 1. 本机前置依赖（海外机器无需安装任何软件）
-- **Python 3.9+**（需安装 `PyYAML`：`pip3 install pyyaml`）
-- **Docker**（macOS 推荐 OrbStack 或 Docker Desktop）
-- **Mutagen**（仅本机安装）：
+### 准备工作（只需要在本机装，海外什么都不用装）
+* **Python 3.9+**（需要 `PyYAML`：`pip3 install pyyaml`）
+* **Docker**（macOS 推荐 OrbStack 或 Docker Desktop）
+* **Mutagen**：
   ```bash
   brew install mutagen-io/mutagen/mutagen
   mutagen daemon start
   ```
-- 本机 `~/.ssh/config` 中已配置好可免密登录海外主机的 SSH 别名（如 `my-remote-host`）。
+* 本机 `~/.ssh/config` 里已经配好能免密连上海外机器的 SSH 别名（比如 `my-remote-host`）。
 
-### 2. 初始化与启动首个项目
+### 几条命令跑起来
 
 ```bash
 git clone https://github.com/zeqi-git/CagePass.git
 cd CagePass
 
-# 1. 初始化配置（生成本地私有 cagepass.yaml，已被 .gitignore 忽略）
+# 1. 初始化（会生成本地私有的 cagepass.yaml，不会被提交到 Git）
 ./bin/cagepass init
-# 编辑 cagepass.yaml，将 remote.ssh_host 改为你的 SSH 别名，按需修改 remote.base_dir
+# 打开 cagepass.yaml，把 remote.ssh_host 改成你的 SSH 别名
 
-# 2. 创建项目槽位
+# 2. 新建一个项目
 ./bin/cagepass project add proj-a
 
-# 3. 投递本地文件
-./bin/cagepass put /path/to/raw_data.csv -p proj-a --ro   # 放只读数据区（100% 留在本机）
-./bin/cagepass put /path/to/scripts      -p proj-a --rw   # 放读写工作区（双向实时同步）
+# 3. 往项目里放文件
+./bin/cagepass put /path/to/raw_data.csv -p proj-a --ro   # 放只读数据区（只留本机，不传海外）
+./bin/cagepass put /path/to/scripts      -p proj-a --rw   # 放工作区（和海外实时双向同步）
 
-# 4. 启动本地断网容器、RPC 守护进程与 Mutagen 同步
+# 4. 启动本地断网容器和同步
 ./bin/cagepass up
 
-# 5. 运行安全隔离与连通性自检
+# 5. 跑一次体检，确认断网隔离和连接都正常
 ./bin/cagepass doctor
 ```
 
 ---
 
-## 日常使用手册
+## 日常怎么用
 
-| 场景 | 交给本机 AI（或手动执行） | 海外 Claude Code 侧 |
+| 你想做什么 | 交给本机 AI（或自己敲） | 海外 Claude 这边 |
 | :--- | :--- | :--- |
-| **每天开工** | `./bin/cagepass up` | 登录海外进入项目目录，打开 Claude Code |
-| **新开多项目** | `./bin/cagepass project add proj-b && ./bin/cagepass up` | 在 `tmux` 新窗口切到 `proj-b` 目录并行开工 |
-| **投放敏感/大文件** | `./bin/cagepass put <文件> -p proj-a --ro` | 海外硬盘无副本，CC 运行 `./local-exec "python3 ..."` 就地分析 |
-| **拿回分析产出** | 直接在 `vault/proj-a/work/` 查看同步回来的报告 | CC 将报告写入 `/workspace/proj-a/work/` 或 `./local/` |
-| **进入本地容器调试** | `./bin/cagepass shell proj-a` | — |
-| **暂停单项目 / 收工** | `./bin/cagepass project stop proj-b` 或 `./bin/cagepass down` | 立即断开共享，本地 `vault/` 数据完整保留 |
+| **每天开工** | `./bin/cagepass up` | 连上海外进项目目录，打开 Claude Code |
+| **同时开多个项目** | `./bin/cagepass project add proj-b && ./bin/cagepass up` | 在 `tmux` 里开新窗口切到 `proj-b` 并行干活 |
+| **给海外算本机大文件** | `./bin/cagepass put <文件> -p proj-a --ro` | 海外硬盘没原文件，让 Claude 跑 `./local-exec "python3 ..."` 就地算 |
+| **在本机看算好的报告** | 直接打开 `vault/proj-a/work/` | Claude 写进 `/workspace/proj-a/work/` 或 `./local/` 就会自动同步回来 |
+| **进本地容器看一眼** | `./bin/cagepass shell proj-a` | — |
+| **停掉某个项目 / 下班收工** | `./bin/cagepass project stop proj-b` 或 `./bin/cagepass down` | 共享立刻断开，本机 `vault/` 里的文件原封不动留着 |
 
 ---
 
-## 四层安全护栏
+## 怎么保证你电脑的安全
 
-1. **目录白名单 + 分级读写**：仅挂载受控金库 `vault/<project>/{data:ro, work:rw}` 与显式白名单目录，宿主机其余文件物理不可见。
-2. **高危路径拦截**（借鉴 [Claude-Cage](https://github.com/Lee-xeo/Claude-Cage)）：启动前解析 `realpath` + 大小写折叠（适配 macOS APFS 大小写不敏感），强制拒绝挂载 `/`、`$HOME`、`~/.ssh`、`~/.claude`、系统目录及 `.state/`。
-3. **`.git` 等 VCS 目录自动只读覆盖**：自动扫描 `:rw` 目录内的 `.git` / `.hg` / `.sl` / `.jj` 并覆盖挂载为 `:ro`，防止远程篡改 `.git/hooks` 或 `.git/config` 在宿主机触发命令执行。
-4. **本地断网 + 防环境泄露**：`local-cage` 仅连 `internal: true` 内部网络（`cap_drop: ALL`、`no-new-privileges:true`、非 root `dev` 运行、绝不挂 `docker.sock`）；所有出站 SSH 命令强制 `-o SendEnv=-*` 屏蔽本机 Locale 透传。
+1. **只给看你点名的文件夹**：容器里只能看到 `vault/<项目>/` 和你明确加进白名单的目录，你电脑上的其他文件夹、桌面、文档、`~/.ssh` 统统看不到。
+2. **拦截危险路径**（参考了 [Claude-Cage](https://github.com/Lee-xeo/Claude-Cage) 的做法）：启动前会解析软链接并处理 macOS 大小写问题，防止不小心把 `/`、`$HOME`、`~/.ssh`、`~/.claude` 或配置目录挂进去。
+3. **保护 `.git` 不被篡改**：工作区里的 `.git` / `.hg` 等目录会自动覆盖为只读，防止海外修改 git hook 导致你在本机敲 git 时误触发命令。
+4. **本地容器彻底断网 + 不泄露本机语言环境**：`local-cage` 放在 `internal: true` 内部网络里，完全连不上公网，也不能用 `root` 或 `docker.sock`；所有出站 SSH 默认关闭 `SendEnv`，不把本机中文语言环境带去海外。
 
 ---
 
-## 开发与测试
+## 跑测试
 
 ```bash
 python3 -m pytest -v
 ```
 
-## 开源许可
+## 许可
 
-本项目基于 [MIT License](LICENSE) 开源。
+[MIT License](LICENSE)
