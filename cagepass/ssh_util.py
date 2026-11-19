@@ -92,7 +92,7 @@ def ensure_cage_keypair(state_dir: Path) -> Tuple[Path, Path]:
                 "-N",
                 "",
                 "-C",
-                "zq-vpc-cage",
+                "cagepass-cage",
                 "-q",
             ],
             check=True,

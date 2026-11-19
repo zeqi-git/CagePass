@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "zq-vpc"
+name = "cagepass"
 version = "0.1.0"
-description = "Local isolated Docker cage and multi-project sync/exec bridge for overseas Claude Code"
+description = "Local isolated offline Docker vault and file-RPC bridge for overseas Claude Code + local AI agent workflows"
 requires-python = ">=3.9"
 dependencies = [
     "PyYAML>=6.0",

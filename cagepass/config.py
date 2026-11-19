@@ -1,4 +1,4 @@
-"""Configuration schema, validation, and YAML persistence for zq-vpc."""
+"""Configuration schema, validation, and YAML persistence for cagepass."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ PROJECT_NAME_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$")
 
 
 class ConfigError(ValueError):
-    """Raised when zq-vpc.yaml or a project configuration is invalid."""
+    """Raised when cagepass.yaml or a project configuration is invalid."""
 
 
 def validate_project_name(name: str) -> str:
@@ -38,7 +38,7 @@ class RemoteConfig:
 @dataclass
 class CageConfig:
     container_name: str = "local-cage"
-    image: str = "zq-vpc-cage:latest"
+    image: str = "cagepass-cage:latest"
     ssh_port: int = 2222
     local_bridge_port: int = 22220
 
@@ -55,7 +55,7 @@ class ProjectConfig:
 
 
 @dataclass
-class ZqVpcConfig:
+class CagePassConfig:
     remote: RemoteConfig = field(default_factory=RemoteConfig)
     cage: CageConfig = field(default_factory=CageConfig)
     projects: Dict[str, ProjectConfig] = field(default_factory=dict)
@@ -114,13 +114,13 @@ class ZqVpcConfig:
         }
 
 
-def default_config() -> ZqVpcConfig:
-    return ZqVpcConfig()
+def default_config() -> CagePassConfig:
+    return CagePassConfig()
 
 
-def load_config(path: Path) -> ZqVpcConfig:
+def load_config(path: Path) -> CagePassConfig:
     if not path.exists():
-        raise ConfigError(f"Config file not found: {path}. Run 'zq-vpc init' first.")
+        raise ConfigError(f"Config file not found: {path}. Run 'cagepass init' first.")
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(raw, dict):
         raise ConfigError(f"Config file must be a YAML mapping: {path}")
@@ -139,12 +139,12 @@ def load_config(path: Path) -> ZqVpcConfig:
     )
     cage = CageConfig(
         container_name=str(cage_raw.get("container_name", "local-cage")),
-        image=str(cage_raw.get("image", "zq-vpc-cage:latest")),
+        image=str(cage_raw.get("image", "cagepass-cage:latest")),
         ssh_port=int(cage_raw.get("ssh_port", 2222)),
         local_bridge_port=int(cage_raw.get("local_bridge_port", 22220)),
     )
 
-    cfg = ZqVpcConfig(remote=remote, cage=cage)
+    cfg = CagePassConfig(remote=remote, cage=cage)
     for name, pdata in projects_raw.items():
         validate_project_name(str(name))
         pdata = pdata or {}
@@ -161,7 +161,7 @@ def load_config(path: Path) -> ZqVpcConfig:
     return cfg
 
 
-def save_config(cfg: ZqVpcConfig, path: Path) -> None:
+def save_config(cfg: CagePassConfig, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     rendered = yaml.safe_dump(cfg.to_dict(), sort_keys=False, allow_unicode=True)
     path.write_text(rendered, encoding="utf-8")

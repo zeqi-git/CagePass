@@ -1,6 +1,5 @@
 .state/
 vault/
-zq-vpc.yaml
 cagepass.yaml
 __pycache__/
 *.pyc

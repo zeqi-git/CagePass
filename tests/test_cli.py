@@ -8,11 +8,11 @@ from unittest import mock
 
 import pytest
 
-from zq_vpc.cli import main as cli_main
-from zq_vpc.config import load_config
-from zq_vpc.remote import build_claude_md_section, build_local_exec_script
-from zq_vpc.ssh_util import build_ph_ssh_cmd, ensure_cage_keypair
-from zq_vpc.sync import build_mutagen_create_cmd
+from cagepass.cli import main as cli_main
+from cagepass.config import load_config
+from cagepass.remote import build_claude_md_section, build_local_exec_script
+from cagepass.ssh_util import build_ph_ssh_cmd, ensure_cage_keypair
+from cagepass.sync import build_mutagen_create_cmd
 
 
 def test_build_ph_ssh_cmd_disables_remote_command_tty_and_locale_leak() -> None:
@@ -58,7 +58,7 @@ def test_build_mutagen_create_cmd_ignores_git_hooks_and_targets_remote_dir() -> 
         extra_ignores=["*.parquet"],
     )
     assert cmd[:3] == ["mutagen", "sync", "create"]
-    assert "--name=zq-vpc-proj-a" in cmd
+    assert "--name=cagepass-proj-a" in cmd
     assert "--sync-mode=two-way-resolved" in cmd
     assert "--ignore=.git/hooks" in cmd
     assert "--ignore=.git/config" in cmd
@@ -86,7 +86,7 @@ def test_cli_init_project_add_and_put_flow(tmp_path: Path) -> None:
     # 1. init
     rc = cli_main(["--root", str(repo_root), "--home", str(fake_home), "init"])
     assert rc == 0
-    cfg_path = repo_root / "zq-vpc.yaml"
+    cfg_path = repo_root / "cagepass.yaml"
     assert cfg_path.exists()
     assert (repo_root / ".state" / "keys" / "cage_id_ed25519").exists()
 
@@ -99,7 +99,7 @@ def test_cli_init_project_add_and_put_flow(tmp_path: Path) -> None:
     assert (repo_root / "vault" / "proj-a" / "data").is_dir()
     assert (repo_root / "vault" / "proj-a" / "work").is_dir()
 
-    # 3. zq-vpc put normal file to --ro
+    # 3. cagepass put normal file to --ro
     sample = fake_home / "raw.csv"
     sample.write_text("col1,col2\n1,2\n")
     rc = cli_main(
@@ -108,7 +108,7 @@ def test_cli_init_project_add_and_put_flow(tmp_path: Path) -> None:
     assert rc == 0
     assert (repo_root / "vault" / "proj-a" / "data" / "raw.csv").read_text() == "col1,col2\n1,2\n"
 
-    # 4. zq-vpc put blocks sensitive .env unless --force
+    # 4. cagepass put blocks sensitive .env unless --force
     secret = fake_home / ".env"
     secret.write_text("SECRET=1\n")
     rc = cli_main(
@@ -117,8 +117,8 @@ def test_cli_init_project_add_and_put_flow(tmp_path: Path) -> None:
     assert rc != 0
     assert not (repo_root / "vault" / "proj-a" / "work" / ".env").exists()
 
-    # 5. zq-vpc project stop proj-a disables it without deleting vault files
-    with mock.patch("zq_vpc.sync.terminate_session", return_value=True):
+    # 5. cagepass project stop proj-a disables it without deleting vault files
+    with mock.patch("cagepass.sync.terminate_session", return_value=True):
         rc = cli_main(["--root", str(repo_root), "--home", str(fake_home), "project", "stop", "proj-a"])
     assert rc == 0
     cfg = load_config(cfg_path)

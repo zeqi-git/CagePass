@@ -7,10 +7,10 @@ import subprocess
 from pathlib import Path
 from typing import Dict
 
-from zq_vpc.ssh_util import build_ph_ssh_cmd
+from cagepass.ssh_util import build_ph_ssh_cmd
 
-MANAGED_START = "<!-- zq-vpc:managed:start -->"
-MANAGED_END = "<!-- zq-vpc:managed:end -->"
+MANAGED_START = "<!-- cagepass:managed:start -->"
+MANAGED_END = "<!-- cagepass:managed:end -->"
 
 
 def build_claude_md_section(project_name: str, remote_local_dir: str) -> str:
@@ -47,7 +47,7 @@ if len(sys.argv) < 2:
     sys.exit(1)
 
 cmd = " ".join(sys.argv[1:])
-base = Path(__file__).resolve().parent / "local" / ".zq_rpc"
+base = Path(__file__).resolve().parent / "local" / ".cagepass_rpc"
 base.mkdir(parents=True, exist_ok=True)
 
 req_id = uuid.uuid4().hex[:12]
@@ -75,7 +75,7 @@ while time.time() < deadline:
     time.sleep(0.25)
 
 req_file.unlink(missing_ok=True)
-print("[local-exec] Timed out waiting for local-cage. Is zq-vpc up on your Mac?", file=sys.stderr)
+print("[local-exec] Timed out waiting for local-cage. Is cagepass up on your Mac?", file=sys.stderr)
 sys.exit(124)
 """
 
@@ -100,7 +100,7 @@ SOCK="${{SOCK/#\\~/$HOME}}"
 KEY="${{KEY/#\\~/$HOME}}"
 
 if [ ! -S "$SOCK" ]; then
-  echo "[local-exec] Local cage socket not found at $SOCK. Is zq-vpc up on your Mac?" >&2
+  echo "[local-exec] Local cage socket not found at $SOCK. Is cagepass up on your Mac?" >&2
   exit 2
 fi
 

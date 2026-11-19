@@ -1,4 +1,4 @@
-"""Command-line interface for zq-vpc."""
+"""Command-line interface for cagepass."""
 
 from __future__ import annotations
 
@@ -10,17 +10,17 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from zq_vpc import remote, sync, tunnel
-from zq_vpc.compose import write_compose_file
-from zq_vpc.config import (
+from cagepass import remote, sync, tunnel
+from cagepass.compose import write_compose_file
+from cagepass.config import (
     ConfigError,
     default_config,
     load_config,
     save_config,
     validate_project_name,
 )
-from zq_vpc.safety import SafetyError, inspect_put_source
-from zq_vpc.ssh_util import ensure_cage_keypair
+from cagepass.safety import SafetyError, inspect_put_source
+from cagepass.ssh_util import ensure_cage_keypair
 
 
 def _default_root() -> Path:
@@ -28,7 +28,7 @@ def _default_root() -> Path:
 
 
 def _cmd_init(root: Path) -> int:
-    cfg_path = root / "zq-vpc.yaml"
+    cfg_path = root / "cagepass.yaml"
     (root / "vault").mkdir(parents=True, exist_ok=True)
     state_dir = root / ".state"
     state_dir.mkdir(parents=True, exist_ok=True)
@@ -46,7 +46,7 @@ def _cmd_init(root: Path) -> int:
 
 
 def _cmd_project_add(root: Path, name: str, remote_dir: Optional[str]) -> int:
-    cfg_path = root / "zq-vpc.yaml"
+    cfg_path = root / "cagepass.yaml"
     cfg = load_config(cfg_path)
     proj = cfg.add_project(name, remote_dir=remote_dir)
     save_config(cfg, cfg_path)
@@ -61,7 +61,7 @@ def _cmd_project_add(root: Path, name: str, remote_dir: Optional[str]) -> int:
 
 
 def _cmd_project_stop(root: Path, name: str) -> int:
-    cfg_path = root / "zq-vpc.yaml"
+    cfg_path = root / "cagepass.yaml"
     cfg = load_config(cfg_path)
     if name not in cfg.projects:
         print(f"[project] Unknown project: {name}", file=sys.stderr)
@@ -74,21 +74,21 @@ def _cmd_project_stop(root: Path, name: str) -> int:
 
 
 def _cmd_project_start(root: Path, name: str) -> int:
-    cfg_path = root / "zq-vpc.yaml"
+    cfg_path = root / "cagepass.yaml"
     cfg = load_config(cfg_path)
     if name not in cfg.projects:
         print(f"[project] Unknown project: {name}", file=sys.stderr)
         return 1
     cfg.projects[name].enabled = True
     save_config(cfg, cfg_path)
-    print(f"[project] Enabled '{name}'. Run 'zq-vpc up' to apply mounts and sync.")
+    print(f"[project] Enabled '{name}'. Run 'cagepass up' to apply mounts and sync.")
     return 0
 
 
 def _cmd_project_list(root: Path) -> int:
-    cfg = load_config(root / "zq-vpc.yaml")
+    cfg = load_config(root / "cagepass.yaml")
     if not cfg.projects:
-        print("No projects configured. Use 'zq-vpc project add <name>'.")
+        print("No projects configured. Use 'cagepass project add <name>'.")
         return 0
     for name, proj in cfg.projects.items():
         state = "enabled" if proj.enabled else "stopped"
@@ -104,9 +104,9 @@ def _cmd_put(
     force: bool,
 ) -> int:
     validate_project_name(project)
-    cfg = load_config(root / "zq-vpc.yaml")
+    cfg = load_config(root / "cagepass.yaml")
     if project not in cfg.projects:
-        print(f"[put] Project '{project}' not found. Run 'zq-vpc project add {project}' first.", file=sys.stderr)
+        print(f"[put] Project '{project}' not found. Run 'cagepass project add {project}' first.", file=sys.stderr)
         return 1
 
     audit = inspect_put_source(src)
@@ -141,7 +141,7 @@ def _cmd_put(
 
 
 def _cmd_up(root: Path, home_dir: Optional[str], local_only: bool) -> int:
-    cfg = load_config(root / "zq-vpc.yaml")
+    cfg = load_config(root / "cagepass.yaml")
     state_dir = root / ".state"
     priv_key, _ = ensure_cage_keypair(state_dir)
 
@@ -182,7 +182,7 @@ def _cmd_up(root: Path, home_dir: Optional[str], local_only: bool) -> int:
         target_addr=cfg.remote.target_addr,
     )
     if not ok_remote:
-        print(f"[up] WARNING: could not reach '{cfg.remote.ssh_host}'. Local cage is up; retry 'zq-vpc up' when overseas VPN is online.", file=sys.stderr)
+        print(f"[up] WARNING: could not reach '{cfg.remote.ssh_host}'. Local cage is up; retry 'cagepass up' when overseas VPN is online.", file=sys.stderr)
         return 1
 
     print(f"[up] Provisioned ./local-exec (file-RPC) & CLAUDE.md on '{cfg.remote.ssh_host}' (zero overseas keys/tunnels)")
@@ -208,7 +208,7 @@ def _cmd_up(root: Path, home_dir: Optional[str], local_only: bool) -> int:
 
 
 def _cmd_down(root: Path) -> int:
-    cfg = load_config(root / "zq-vpc.yaml")
+    cfg = load_config(root / "cagepass.yaml")
     state_dir = root / ".state"
 
     for name in cfg.projects:
@@ -226,7 +226,7 @@ def _cmd_down(root: Path) -> int:
 
 
 def _cmd_status(root: Path) -> int:
-    cfg = load_config(root / "zq-vpc.yaml")
+    cfg = load_config(root / "cagepass.yaml")
     tstat = tunnel.tunnel_status(root / ".state")
     print(f"Remote host : {cfg.remote.ssh_host} (base_dir={cfg.remote.base_dir})")
     print(f"Bridge PID  : {tstat['bridge_pid'] or 'stopped'}")
@@ -243,7 +243,7 @@ def _cmd_status(root: Path) -> int:
 
 
 def _cmd_shell(root: Path, project: Optional[str]) -> int:
-    cfg = load_config(root / "zq-vpc.yaml")
+    cfg = load_config(root / "cagepass.yaml")
     workdir = f"/workspace/{project}" if project else "/workspace"
     res = subprocess.run(
         ["docker", "exec", "-it", "-w", workdir, cfg.cage.container_name, "/bin/bash"],
@@ -253,8 +253,8 @@ def _cmd_shell(root: Path, project: Optional[str]) -> int:
 
 
 def _cmd_doctor(root: Path) -> int:
-    cfg = load_config(root / "zq-vpc.yaml")
-    print("=== zq-vpc doctor ===")
+    cfg = load_config(root / "cagepass.yaml")
+    print("=== cagepass doctor ===")
 
     # 1. Docker daemon
     d_info = subprocess.run(["docker", "info"], capture_output=True, text=True)
@@ -298,13 +298,13 @@ def _cmd_doctor(root: Path) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="zq-vpc", description="Local isolated Docker cage & overseas bridge")
-    parser.add_argument("--root", default=str(_default_root()), help="Path to zq-vpc repository root")
+    parser = argparse.ArgumentParser(prog="cagepass", description="Local isolated Docker cage & overseas bridge")
+    parser.add_argument("--root", default=str(_default_root()), help="Path to cagepass repository root")
     parser.add_argument("--home", default=None, help="Override home directory (for testing)")
 
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("init", help="Initialize zq-vpc.yaml, vault/, and dedicated SSH keypair")
+    sub.add_parser("init", help="Initialize cagepass.yaml, vault/, and dedicated SSH keypair")
 
     p_proj = sub.add_parser("project", help="Manage multi-project slots")
     p_proj_sub = p_proj.add_subparsers(dest="proj_cmd", required=True)

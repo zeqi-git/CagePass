@@ -1,4 +1,4 @@
-"""Tests for zq_vpc.config and zq_vpc.compose."""
+"""Tests for cagepass.config and cagepass.compose."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from zq_vpc.compose import generate_compose_dict
-from zq_vpc.config import ConfigError, ZqVpcConfig, default_config, load_config, save_config
+from cagepass.compose import generate_compose_dict
+from cagepass.config import ConfigError, CagePassConfig, default_config, load_config, save_config
 
 
 def test_default_config_uses_cagepass_remote_base_dir() -> None:
@@ -19,7 +19,7 @@ def test_default_config_uses_cagepass_remote_base_dir() -> None:
 
 
 def test_config_roundtrip_and_invalid_project_name_rejected(tmp_path: Path) -> None:
-    cfg_path = tmp_path / "zq-vpc.yaml"
+    cfg_path = tmp_path / "cagepass.yaml"
     cfg = default_config()
     cfg.add_project("proj-a")
     save_config(cfg, cfg_path)
@@ -36,7 +36,7 @@ def test_config_roundtrip_and_invalid_project_name_rejected(tmp_path: Path) -> N
 
 def test_generate_compose_enforces_offline_nonroot_and_git_ro_overlays(tmp_path: Path) -> None:
     fake_home = tmp_path / "home" / "alice"
-    repo_root = fake_home / "zq_vpc"
+    repo_root = fake_home / "cagepass"
     (repo_root / "vault" / "proj-a" / "data").mkdir(parents=True)
     work_dir = repo_root / "vault" / "proj-a" / "work"
     (work_dir / ".git" / "hooks").mkdir(parents=True)

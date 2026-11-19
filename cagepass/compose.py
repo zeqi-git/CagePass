@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
-from zq_vpc.config import ZqVpcConfig
-from zq_vpc.safety import find_protected_vcs_dirs, validate_mount_path
+from cagepass.config import CagePassConfig
+from cagepass.safety import find_protected_vcs_dirs, validate_mount_path
 
 
 def _add_vcs_ro_overlays(
@@ -26,7 +26,7 @@ def _add_vcs_ro_overlays(
 
 
 def generate_compose_dict(
-    cfg: ZqVpcConfig,
+    cfg: CagePassConfig,
     project_root: str,
     home_dir: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -96,7 +96,7 @@ def generate_compose_dict(
 
 
 def write_compose_file(
-    cfg: ZqVpcConfig,
+    cfg: CagePassConfig,
     project_root: str,
     home_dir: Optional[str] = None,
 ) -> Path:

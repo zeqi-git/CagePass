@@ -1,4 +1,4 @@
-"""Tests for zq_vpc.safety (path validation, VCS protection, put auditing)."""
+"""Tests for cagepass.safety (path validation, VCS protection, put auditing)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from zq_vpc.safety import (
+from cagepass.safety import (
     SafetyError,
     find_protected_vcs_dirs,
     inspect_put_source,
@@ -22,7 +22,7 @@ def test_blocks_root_and_home_and_sensitive_dirs(tmp_path: Path) -> None:
     ssh_dir.mkdir()
     claude_dir = fake_home / ".claude"
     claude_dir.mkdir()
-    repo_root = fake_home / "zq_vpc"
+    repo_root = fake_home / "cagepass"
     state_dir = repo_root / ".state"
     state_dir.mkdir(parents=True)
 
@@ -45,7 +45,7 @@ def test_blocks_root_and_home_and_sensitive_dirs(tmp_path: Path) -> None:
 
 def test_allows_safe_project_subdir_inside_home(tmp_path: Path) -> None:
     fake_home = tmp_path / "home" / "alice"
-    repo_root = fake_home / "zq_vpc"
+    repo_root = fake_home / "cagepass"
     safe_vault = repo_root / "vault" / "proj-a" / "data"
     safe_dataset = fake_home / "datasets" / "sales"
     safe_vault.mkdir(parents=True)
@@ -60,7 +60,7 @@ def test_blocks_symlink_escaping_to_ssh_or_home(tmp_path: Path) -> None:
     fake_home = tmp_path / "home" / "alice"
     ssh_dir = fake_home / ".ssh"
     ssh_dir.mkdir(parents=True)
-    repo_root = fake_home / "zq_vpc"
+    repo_root = fake_home / "cagepass"
     repo_root.mkdir(parents=True)
 
     sneaky_link = fake_home / "datasets" / "harmless_name"
@@ -74,7 +74,7 @@ def test_blocks_symlink_escaping_to_ssh_or_home(tmp_path: Path) -> None:
 def test_case_insensitive_blocking_on_macos_style_paths(tmp_path: Path) -> None:
     fake_home = tmp_path / "home" / "alice"
     (fake_home / ".ssh").mkdir(parents=True)
-    repo_root = fake_home / "zq_vpc"
+    repo_root = fake_home / "cagepass"
     (repo_root / ".state").mkdir(parents=True)
 
     with pytest.raises(SafetyError):

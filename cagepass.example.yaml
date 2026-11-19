@@ -1,5 +1,5 @@
 # CagePass example configuration
-# Copy to zq-vpc.yaml (or run `./bin/cagepass init`) and fill in your remote SSH host alias.
+# Copy to cagepass.yaml (or run `./bin/cagepass init`) and fill in your remote SSH host alias.
 
 remote:
   # An SSH host alias defined in your local ~/.ssh/config
@@ -13,7 +13,7 @@ remote:
 
 cage:
   container_name: local-cage
-  image: zq-vpc-cage:latest
+  image: cagepass-cage:latest
   ssh_port: 2222
   local_bridge_port: 22220
 

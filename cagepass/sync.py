@@ -15,7 +15,7 @@ DEFAULT_IGNORES = (
 
 
 def session_name(project_name: str) -> str:
-    return f"zq-vpc-{project_name}"
+    return f"cagepass-{project_name}"
 
 
 def mutagen_installed() -> bool:

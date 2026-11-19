@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from zq_vpc.ssh_util import build_ph_ssh_cmd
+from cagepass.ssh_util import build_ph_ssh_cmd
 
 
 def _pid_alive(pid_file: Path) -> Optional[int]:
@@ -94,13 +94,13 @@ def process_rpc_request(req_file: Path, project_name: str, container_name: str) 
 
 
 def _rpc_watcher_loop(vault_dir: Path, container_name: str) -> None:
-    """Poll vault/*/work/.zq_rpc/req_*.json and execute inside local-cage."""
+    """Poll vault/*/work/.cagepass_rpc/req_*.json and execute inside local-cage."""
     in_flight = set()
     while True:
         try:
             if vault_dir.is_dir():
                 for proj_dir in vault_dir.iterdir():
-                    rpc_dir = proj_dir / "work" / ".zq_rpc"
+                    rpc_dir = proj_dir / "work" / ".cagepass_rpc"
                     if not rpc_dir.is_dir():
                         continue
                     for req_file in sorted(rpc_dir.glob("req_*.json")):
@@ -226,7 +226,7 @@ def start_bridge(
         [
             sys.executable,
             "-m",
-            "zq_vpc.tunnel",
+            "cagepass.tunnel",
             container_name,
             str(container_port),
             str(bind_port),

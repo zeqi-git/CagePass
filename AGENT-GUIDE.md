@@ -45,14 +45,14 @@ python3 -c "import yaml; print('PyYAML OK')" 2>&1 || echo "PYYAML_MISSING"
 > ```bash
 > ssh -o BatchMode=yes -o ConnectTimeout=8 -o RemoteCommand=none -o RequestTTY=no -o 'SendEnv=-*' <ssh_host> 'uname -a; pwd'
 > ```
-> 若用户的远程主机需要通过本机代理（如 TUN 虚拟网卡或 SOCKS5 + 跳板机）连接，请引导用户确认代理已开启，必要时在 `zq-vpc.yaml` 的 `remote.socks5_proxy` / `jump_host` / `target_addr` 中配置，**不要修改管理员维护的现有 SSH 脚本**。
+> 若用户的远程主机需要通过本机代理（如 TUN 虚拟网卡或 SOCKS5 + 跳板机）连接，请引导用户确认代理已开启，必要时在 `cagepass.yaml` 的 `remote.socks5_proxy` / `jump_host` / `target_addr` 中配置，**不要修改管理员维护的现有 SSH 脚本**。
 
 ### Phase 3：初始化、建项目并全链路启动
 1. 初始化仓库：
    ```bash
    ./bin/cagepass init
    ```
-2. 将用户确认的 `ssh_host` 和 `base_dir` 写入 `zq-vpc.yaml`（该文件已被 `.gitignore` 忽略，绝不提交到 Git）。
+2. 将用户确认的 `ssh_host` 和 `base_dir` 写入 `cagepass.yaml`（该文件已被 `.gitignore` 忽略，绝不提交到 Git）。
 3. 创建首个项目并启动全链路：
    ```bash
    ./bin/cagepass project add <project_name>
@@ -90,6 +90,6 @@ python3 -c "import yaml; print('PyYAML OK')" 2>&1 || echo "PYYAML_MISSING"
 ## 四、安全与风控红线（触及任何一条必须立刻叫停并提醒用户）
 
 1. **绝不泄露本地环境**：所有工具 SSH 调用必须保留 `-o SendEnv=-*`，防止将本机语言/地区环境变量透传到远程。
-2. **绝不提交私有文件到 Git**：提交代码前确认 `zq-vpc.yaml`、`.state/`、`vault/` 均未被跟踪。
+2. **绝不提交私有文件到 Git**：提交代码前确认 `cagepass.yaml`、`.state/`、`vault/` 均未被跟踪。
 3. **绝不触碰远程系统与账号红线**：不执行 `sudo`、不改系统软件、不复制远程 AI 登录凭据、不引导用户在多个不同 IP 并发登录同一远程账号。
 4. **绝不放宽容器权限**：保持 `cage_net` 为 `internal: true`、`cap_drop: ALL`、`no-new-privileges:true`、非 root 运行、绝不挂载 `/var/run/docker.sock`。

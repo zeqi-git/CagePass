@@ -3,10 +3,10 @@
 Inspired by Claude-Cage's internal/mounts/safety.go:
 - Resolves physical paths (realpath) and case-folds for macOS APFS safety.
 - Blocks mounting /, $HOME (or any ancestor), ~/.ssh, ~/.claude, system dirs,
-  and zq-vpc's own root/.state directory.
+  and cagepass's own root/.state directory.
 - Detects VCS metadata dirs (.git, .hg, .sl, .jj) inside :rw mounts so they
   can be overlaid as :ro (preventing host git-hook RCE).
-- Audits files staged via `zq-vpc put` for escaping symlinks and secrets.
+- Audits files staged via `cagepass put` for escaping symlinks and secrets.
 """
 
 from __future__ import annotations
@@ -117,12 +117,12 @@ def validate_mount_path(
             "it is or contains your home directory."
         )
 
-    # 2. Must not be the zq-vpc repo root itself (contains scripts/.state)
+    # 2. Must not be the cagepass repo root itself (contains scripts/.state)
     #    Subdirectories like vault/ are allowed, but .state/ is forbidden.
     if folded == repo_folded or _contains_or_same(folded, state_folded) or _is_same_or_inside(folded, state_folded):
         raise SafetyError(
             f"Refusing to mount '{path}' (resolves to '{real}'): "
-            "it exposes zq-vpc's own root or .state/ directory."
+            "it exposes cagepass's own root or .state/ directory."
         )
 
     # 3. Forbidden sensitive dotfiles under $HOME
