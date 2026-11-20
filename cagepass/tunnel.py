@@ -38,12 +38,19 @@ def _stop_pid(pid_file: Path) -> None:
         pid_file.unlink()
 
 
-def process_rpc_request(req_file: Path, project_name: str, container_name: str) -> None:
+def process_rpc_request(
+    req_file: Path,
+    project_name: str,
+    container_name: str,
+    default_timeout: int = 1800,
+) -> None:
     """Execute a single RPC request inside the offline local-cage container."""
     try:
         payload = json.loads(req_file.read_text(encoding="utf-8"))
         req_id = str(payload.get("id", ""))
         cmd = str(payload.get("cmd", ""))
+        raw_timeout = payload.get("timeout", default_timeout)
+        cmd_timeout = max(1, int(raw_timeout)) if raw_timeout is not None else default_timeout
     except Exception:
         req_file.unlink(missing_ok=True)
         return
@@ -65,7 +72,7 @@ def process_rpc_request(req_file: Path, project_name: str, container_name: str) 
             ],
             capture_output=True,
             text=True,
-            timeout=600,
+            timeout=cmd_timeout,
         )
         result = {
             "id": req_id,
@@ -78,7 +85,7 @@ def process_rpc_request(req_file: Path, project_name: str, container_name: str) 
             "id": req_id,
             "returncode": 124,
             "stdout": "",
-            "stderr": "[local-exec] Command timed out after 600s.\n",
+            "stderr": f"[local-exec] Command timed out after {cmd_timeout}s.\n",
         }
     except Exception as exc:
         result = {
@@ -93,7 +100,11 @@ def process_rpc_request(req_file: Path, project_name: str, container_name: str) 
     req_file.unlink(missing_ok=True)
 
 
-def _rpc_watcher_loop(vault_dir: Path, container_name: str) -> None:
+def _rpc_watcher_loop(
+    vault_dir: Path,
+    container_name: str,
+    default_timeout: int = 1800,
+) -> None:
     """Poll vault/*/work/.cagepass_rpc/req_*.json and execute inside local-cage."""
     in_flight = set()
     while True:
@@ -111,7 +122,7 @@ def _rpc_watcher_loop(vault_dir: Path, container_name: str) -> None:
 
                         def _run(rf: Path = req_file, pn: str = proj_dir.name, k: str = key) -> None:
                             try:
-                                process_rpc_request(rf, pn, container_name)
+                                process_rpc_request(rf, pn, container_name, default_timeout=default_timeout)
                             finally:
                                 in_flight.discard(k)
 
@@ -126,12 +137,13 @@ def run_bridge_server(
     container_port: int,
     bind_port: int,
     vault_dir: Optional[str] = None,
+    default_timeout: int = 1800,
 ) -> None:
     """Serve local TCP bridge + vault file-RPC watcher for the offline local-cage."""
     if vault_dir:
         threading.Thread(
             target=_rpc_watcher_loop,
-            args=(Path(vault_dir), container_name),
+            args=(Path(vault_dir), container_name, default_timeout),
             daemon=True,
         ).start()
 
@@ -213,6 +225,7 @@ def start_bridge(
     container_name: str,
     container_port: int,
     bind_port: int,
+    default_timeout: int = 1800,
 ) -> int:
     """Start the background loopback bridge + file-RPC watcher to the offline container."""
     pid_file = state_dir / "bridge.pid"
@@ -231,6 +244,7 @@ def start_bridge(
             str(container_port),
             str(bind_port),
             str(vault_dir),
+            str(default_timeout),
         ],
         stdout=log_file,
         stderr=log_file,
@@ -318,4 +332,11 @@ def tunnel_status(state_dir: Path) -> dict:
 if __name__ == "__main__":
     if len(sys.argv) >= 4:
         vdir = sys.argv[4] if len(sys.argv) >= 5 else None
-        run_bridge_server(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), vault_dir=vdir)
+        tout = int(sys.argv[5]) if len(sys.argv) >= 6 else 1800
+        run_bridge_server(
+            sys.argv[1],
+            int(sys.argv[2]),
+            int(sys.argv[3]),
+            vault_dir=vdir,
+            default_timeout=tout,
+        )

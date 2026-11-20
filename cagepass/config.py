@@ -41,6 +41,7 @@ class CageConfig:
     image: str = "cagepass-cage:latest"
     ssh_port: int = 2222
     local_bridge_port: int = 22220
+    exec_timeout: int = 1800
 
 
 @dataclass
@@ -99,6 +100,7 @@ class CagePassConfig:
                 "image": self.cage.image,
                 "ssh_port": self.cage.ssh_port,
                 "local_bridge_port": self.cage.local_bridge_port,
+                "exec_timeout": self.cage.exec_timeout,
             },
             "projects": {
                 name: {
@@ -142,6 +144,7 @@ def load_config(path: Path) -> CagePassConfig:
         image=str(cage_raw.get("image", "cagepass-cage:latest")),
         ssh_port=int(cage_raw.get("ssh_port", 2222)),
         local_bridge_port=int(cage_raw.get("local_bridge_port", 22220)),
+        exec_timeout=int(cage_raw.get("exec_timeout", 1800)),
     )
 
     cfg = CagePassConfig(remote=remote, cage=cage)

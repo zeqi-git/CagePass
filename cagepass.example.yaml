@@ -16,6 +16,8 @@ cage:
   image: cagepass-cage:latest
   ssh_port: 2222
   local_bridge_port: 22220
+  # Default per-command timeout in seconds for ./local-exec (default: 1800s = 30 min)
+  exec_timeout: 1800
 
 projects:
   demo:

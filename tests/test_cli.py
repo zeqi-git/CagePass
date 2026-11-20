@@ -67,10 +67,16 @@ def test_build_mutagen_create_cmd_ignores_git_hooks_and_targets_remote_dir() -> 
 
 
 def test_remote_helpers_generate_claude_md_and_local_exec() -> None:
-    md = build_claude_md_section("proj-a", "~/cagepass_projects/proj-a/local")
+    md = build_claude_md_section("proj-a", "~/cagepass_projects/proj-a/local", default_timeout=1800)
     assert "proj-a" in md
     assert "./local-exec" in md
+    assert "--timeout 3600" in md
     assert "/workspace/proj-a/data" in md
+
+    from cagepass.remote import build_project_local_exec_script
+    rpc_script = build_project_local_exec_script(default_timeout=1800)
+    assert "timeout_sec = 1800" in rpc_script
+    assert '"--timeout"' in rpc_script
 
     script = build_local_exec_script("~/cagepass_run/cage.sock", "~/cagepass_run/cage_id_ed25519")
     assert script.startswith("#!/usr/bin/env bash")

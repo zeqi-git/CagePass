@@ -161,8 +161,9 @@ def _cmd_up(root: Path, home_dir: Optional[str], local_only: bool) -> int:
         container_name=cfg.cage.container_name,
         container_port=cfg.cage.ssh_port,
         bind_port=cfg.cage.local_bridge_port,
+        default_timeout=cfg.cage.exec_timeout,
     )
-    print(f"[up] Local cage bridge running (pid={bridge_pid}, 127.0.0.1:{cfg.cage.local_bridge_port})")
+    print(f"[up] Local cage bridge running (pid={bridge_pid}, 127.0.0.1:{cfg.cage.local_bridge_port}, timeout={cfg.cage.exec_timeout}s)")
 
     if local_only:
         print("[up] --local-only mode: skipped overseas tunnel/sync.")
@@ -180,6 +181,7 @@ def _cmd_up(root: Path, home_dir: Optional[str], local_only: bool) -> int:
         socks5_proxy=cfg.remote.socks5_proxy,
         jump_host=cfg.remote.jump_host,
         target_addr=cfg.remote.target_addr,
+        default_timeout=cfg.cage.exec_timeout,
     )
     if not ok_remote:
         print(f"[up] WARNING: could not reach '{cfg.remote.ssh_host}'. Local cage is up; retry 'cagepass up' when overseas VPN is online.", file=sys.stderr)

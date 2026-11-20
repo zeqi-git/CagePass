@@ -13,7 +13,7 @@ MANAGED_START = "<!-- cagepass:managed:start -->"
 MANAGED_END = "<!-- cagepass:managed:end -->"
 
 
-def build_claude_md_section(project_name: str, remote_local_dir: str) -> str:
+def build_claude_md_section(project_name: str, remote_local_dir: str, default_timeout: int = 1800) -> str:
     """Build the CLAUDE.md instruction block for a remote project (container-compatible)."""
     return f"""{MANAGED_START}
 ## Local Docker Bridge (`{project_name}`)
@@ -23,18 +23,21 @@ def build_claude_md_section(project_name: str, remote_local_dir: str) -> str:
 - **Run scripts locally inside the offline container** (works directly from inside sandboxed remote containers):
   ```bash
   ./local-exec "python3 your_script.py"
+  # For heavy jobs exceeding the default {default_timeout}s timeout:
+  ./local-exec --timeout 3600 "python3 heavy_job.py"
   ```
   Scripts execute in `/workspace/{project_name}/work` (which mirrors `./local/`) with `pandas`, `duckdb`, and `pyarrow` pre-installed, and can read `/workspace/{project_name}/data` at local disk speed. Any output written to `/workspace/{project_name}/work/` automatically syncs back to `./local/`.
 {MANAGED_END}
 """
 
 
-def build_project_local_exec_script() -> str:
+def build_project_local_exec_script(default_timeout: int = 1800) -> str:
     """Build the self-contained project-root `./local-exec` file-RPC runner.
 
     Works inside sandboxed remote containers with zero SSH or host-network dependencies.
+    Supports optional `--timeout <seconds>` / `-t <seconds>` before the command.
     """
-    return """#!/usr/bin/env python3
+    return f"""#!/usr/bin/env python3
 import json
 import os
 import sys
@@ -42,23 +45,36 @@ import time
 import uuid
 from pathlib import Path
 
-if len(sys.argv) < 2:
-    print("Usage: ./local-exec <command...>", file=sys.stderr)
+args = sys.argv[1:]
+timeout_sec = {int(default_timeout)}
+
+if len(args) >= 2 and args[0] in ("--timeout", "-t"):
+    try:
+        timeout_sec = max(1, int(args[1]))
+    except ValueError:
+        print(f"Invalid timeout value: {{args[1]}}", file=sys.stderr)
+        sys.exit(2)
+    args = args[2:]
+
+if not args:
+    print("Usage: ./local-exec [--timeout SECONDS] <command...>", file=sys.stderr)
     sys.exit(1)
 
-cmd = " ".join(sys.argv[1:])
+cmd = " ".join(args)
 base = Path(__file__).resolve().parent / "local" / ".cagepass_rpc"
 base.mkdir(parents=True, exist_ok=True)
 
 req_id = uuid.uuid4().hex[:12]
-tmp_req = base / f".tmp_req_{req_id}.json"
-req_file = base / f"req_{req_id}.json"
-res_file = base / f"res_{req_id}.json"
+tmp_req = base / f".tmp_req_{{req_id}}.json"
+req_file = base / f"req_{{req_id}}.json"
+res_file = base / f"res_{{req_id}}.json"
 
-tmp_req.write_text(json.dumps({"id": req_id, "cmd": cmd}, ensure_ascii=False), encoding="utf-8")
+payload = {{"id": req_id, "cmd": cmd, "timeout": timeout_sec}}
+tmp_req.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 tmp_req.replace(req_file)
 
-deadline = time.time() + 600
+# Wait timeout_sec + 30s grace so the local bridge can write back its own timeout result cleanly
+deadline = time.time() + timeout_sec + 30
 while time.time() < deadline:
     if res_file.exists():
         try:
@@ -75,7 +91,7 @@ while time.time() < deadline:
     time.sleep(0.25)
 
 req_file.unlink(missing_ok=True)
-print("[local-exec] Timed out waiting for local-cage. Is cagepass up on your Mac?", file=sys.stderr)
+print(f"[local-exec] Timed out waiting {{timeout_sec}}s for local-cage. Is cagepass up on your Mac?", file=sys.stderr)
 sys.exit(124)
 """
 
@@ -124,6 +140,7 @@ def provision_remote_user_space(
     socks5_proxy: str = "",
     jump_host: str = "",
     target_addr: str = "",
+    default_timeout: int = 1800,
 ) -> bool:
     """Idempotently provision project ./local-exec (file-RPC) and CLAUDE.md on `ph`.
 
@@ -132,7 +149,7 @@ def provision_remote_user_space(
     commands = []
 
     proj_exec_b64 = base64.b64encode(
-        build_project_local_exec_script().encode("utf-8")
+        build_project_local_exec_script(default_timeout=default_timeout).encode("utf-8")
     ).decode("ascii")
 
     for proj_name, remote_local_dir in projects.items():
@@ -140,7 +157,11 @@ def provision_remote_user_space(
         if proj_parent.endswith("/local"):
             proj_parent = proj_parent[: -len("/local")]
         md_b64 = base64.b64encode(
-            build_claude_md_section(proj_name, remote_local_dir).encode("utf-8")
+            build_claude_md_section(
+                proj_name,
+                remote_local_dir,
+                default_timeout=default_timeout,
+            ).encode("utf-8")
         ).decode("ascii")
         commands.append(f"mkdir -p {remote_local_dir} {proj_parent}/vpc")
         commands.append(
